@@ -1,5 +1,5 @@
 ;;;; package.lisp
 
 (defpackage #:timeparse
-  (:use #:cl))
+  (:use #:cl #:local-time))
 
