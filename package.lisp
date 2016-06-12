@@ -1,5 +1,6 @@
 ;;;; package.lisp
 
-(defpackage #:timeparse
+(defpackage #:info.isoraqathedh.timeparse
+  (:nicknames #:timeparse)
   (:use #:cl #:local-time))
 
