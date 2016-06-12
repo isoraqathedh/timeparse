@@ -1,7 +1,7 @@
 ;;;; timeparse.asd
 
 (asdf:defsystem #:timeparse
-  :description "Describe timeparse here"
+  :description "Parses a timestring using the spec from local-time."
   :author "Isoraķatheð Zorethan <isoraqathedh.zorethan@gmail.com>"
   :license "MIT"
   :depends-on (#:local-time #:cl-ppcre)
