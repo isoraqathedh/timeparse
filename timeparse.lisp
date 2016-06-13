@@ -2,12 +2,17 @@
 
 (in-package #:timeparse)
 
-(defun match-entire-target (needle haystack start)
+(defvar +paddable-keywords+
+  '(:year :month :day :weekday :hour :minute :second :msec :usec :nsec
+    :iso-week-year :iso-week-number :iso-week-day)
+  "These symbols are allowed to be in a padding list.")
+
+(defun match-entire-target (haystack needle start)
   "Determine if NEEDLE is entirely in HAYSTACK at the position START."
   (string= needle haystack :start2 start :end2 (min (length haystack)
                                                     (+ start (length needle)))))
 
-(defun looking-for (needles haystack start)
+(defun looking-for (haystack needles start)
   "See if the string immediately at point is part of a list of needles.
 Returns position of the needle found in NEEDLES."
   (loop for needle across needles
@@ -16,7 +21,7 @@ Returns position of the needle found in NEEDLES."
                   (match-entire-target needle haystack start))
         return j))
 
-(defun read-number (digit-count haystack start &optional (padchar #\0))
+(defun read-number (haystack digit-count start &optional (padchar #\0))
   "Read a number with at least DIGIT-COUNT digits."
   (let ((position-after-padchars
           (position-if (lambda (thing) (char/= thing padchar)) haystack
@@ -30,4 +35,6 @@ Returns position of the needle found in NEEDLES."
         (error "Not enough digits to make a ~r-digit number." digit-count))
       (list number (- digits-used start)))))
 
-
+(defun match-fragment (haystack fragment start)
+  (etypecase fragment
+    (character (match-entire-target haystack (string fragment) start))))
