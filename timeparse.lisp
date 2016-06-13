@@ -9,8 +9,12 @@
 
 (defun match-entire-target (haystack needle start)
   "Determine if NEEDLE is entirely in HAYSTACK at the position START."
-  (string= needle haystack :start2 start :end2 (min (length haystack)
-                                                    (+ start (length needle)))))
+  (let ((match (string= needle haystack
+                         :start2 start
+                         :end2 (min (length haystack)
+                                    (+ start (length needle))))))
+    (when match
+      (list match (length needle)))))
 
 (defun looking-for (haystack needles start)
   "See if the string immediately at point is part of a list of needles.
@@ -19,7 +23,7 @@ Returns position of the needle found in NEEDLES."
         for j from 0
         when (and (not (string= needle ""))
                   (match-entire-target needle haystack start))
-        return j))
+        return (list j (length needle))))
 
 (defun read-number (haystack digit-count start &optional (padchar #\0))
   "Read a number with at least DIGIT-COUNT digits."
