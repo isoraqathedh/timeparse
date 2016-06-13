@@ -72,9 +72,13 @@ that can be joined together to eventually be passed through to `CL-PPCRE:SCAN'."
            ((:timezone
              `(:register (:greedy-repetition 1 nil (:RANGE #\A #\Z)))))))))
 
-(defun timestring-format->ppcre-parse-tree (timestring-format)
+(defun timestring-format->ppcre-parse-tree (timestring-format &optional anchored)
   "Creates a CL-PPCRE parse tree that matches all time strings
 that the format would produce.
 
 May match something that may not be possible."
-  (cons :sequence (mapcar #'create-matcher-fragment timestring-format)))
+  (concatenate 'list
+               '(:sequence)
+               (if anchored '(:start-anchor))
+               (mapcar #'create-matcher-fragment timestring-format)
+               (if anchored '(:end-anchor))))
