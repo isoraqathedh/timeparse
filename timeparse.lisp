@@ -22,7 +22,7 @@
     (when match
       (list match (length needle)))))
 
-(defun looking-for (haystack needles start)
+(defun match-multiple-targets (haystack needles start)
   "See if the string immediately at point is part of a list of needles.
 Returns position of the needle found in NEEDLES."
   (loop for needle across needles
