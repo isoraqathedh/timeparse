@@ -28,7 +28,7 @@ Returns position of the needle found in NEEDLES."
   (loop for needle across needles
         for j from 0
         when (and (not (string= needle ""))
-                  (match-entire-target needle haystack start))
+                  (match-entire-target haystack needle start))
         return (list j (length needle))))
 
 (defun read-number (haystack digit-count start &optional (padchar #\0))
