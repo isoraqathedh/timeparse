@@ -47,4 +47,15 @@ Returns position of the needle found in NEEDLES."
 
 (defun match-fragment (haystack fragment start)
   (etypecase fragment
-    (character (match-entire-target haystack (string fragment) start))))
+    (character (match-entire-target haystack (string fragment) start))
+    (string (match-entire-target haystack fragment start))
+    (list (destructuring-bind (spec pad &optional (pad-char #\0)) fragment
+            (declare (ignorable spec))
+            (read-number haystack pad start pad-char)))
+    (paddable-keyword (read-number haystack 1 start))
+    (keyword (case fragment
+               (:long-month (looking-for haystack +month-names+ start))
+               (:short-month (looking-for haystack +short-month-names+ start))
+               (:long-weekday (looking-for haystack +day-names+ start))
+               (:short-weekday (looking-for haystack +short-day-names+ start))
+               (:ampm (looking-for haystack #("am" "pm") start))))))
