@@ -7,6 +7,12 @@
     :iso-week-year :iso-week-number :iso-week-day)
   "These symbols are allowed to be in a padding list.")
 
+(defun paddable-keywords-p (thing)
+  (find thing +paddable-keywords+))
+
+(deftype paddable-keyword ()
+  '(satisfies paddable-keywords-p))
+
 (defun match-entire-target (haystack needle start)
   "Determine if NEEDLE is entirely in HAYSTACK at the position START."
   (let ((match (string= needle haystack
