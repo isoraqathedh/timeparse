@@ -116,8 +116,50 @@ that also count toward the maximum."
             (read-number haystack pad start pad-char)))
     (paddable-keyword (read-number haystack 1 start))
     (keyword (case fragment
-               (:long-month (looking-for haystack +month-names+ start))
-               (:short-month (looking-for haystack +short-month-names+ start))
-               (:long-weekday (looking-for haystack +day-names+ start))
-               (:short-weekday (looking-for haystack +short-day-names+ start))
-               (:ampm (looking-for haystack #("am" "pm") start))))))
+               (:long-month
+                (match-multiple-targets haystack +month-names+ start))
+               (:short-month
+                (match-multiple-targets haystack +short-month-names+ start))
+               (:long-weekday
+                (match-multiple-targets haystack +day-names+ start))
+               (:short-weekday
+                (match-multiple-targets haystack +short-day-names+ start))
+               (:ampm
+                (match-multiple-targets haystack #("am" "pm") start))
+               (:ordinal-day
+                (let* ((number-component
+                         (match-number haystack start :max-digit-count 2))
+                       (ordinal-component
+                         (match-multiple-targets
+                          haystack
+                          #("st" "nd" "rd" "th")
+                          (+ start (second number-component)))))
+                  (list (first number-component)
+                        (+ (second ordinal-component)
+                           (second number-component)))))
+               (:hour12 (match-number start :max-digit-count 2))
+               ((:gmt-offset :gmt-offset-or-z :gmt-offset-hhmm)
+                (let (characters-parsed offset-hour offset-minute met-colon-p)
+                  ;; Deal with Z first:
+                  (when (handler-case (match-entire-target haystack "Z" start)
+                          (match-fallthrough-error nil))
+                    (return-from match-fragment (list "Z" 1)))
+                  ;; Match the hour:
+                  (destructuring-bind (match count)
+                      (match-number haystack start :digit-count 2)
+                    (setf offset-hour match)
+                    (incf characters-parsed count))
+                  ;; Match the colon
+                  (when (handler-case (match-entire-target haystack ":"
+                                                           (+ start count))
+                          (match-fallthrough-error nil))
+                    (incf characters-parsed)
+                    (setf met-colon-p t))
+                  ;; Match the minute
+                  (destructuring-bind (match count)
+                      (match-number haystack (+ start characters-parsed)
+                                    :digit-count 2)
+                    (setf offset-minute match)
+                    (incf characters-parsed count))
+                  (list (list offset-hour offset-minute met-colon-p)
+                        characters-parsed)))))))
