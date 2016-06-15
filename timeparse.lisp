@@ -163,3 +163,25 @@ that also count toward the maximum."
                     (incf characters-parsed count))
                   (list (list offset-hour offset-minute met-colon-p)
                         characters-parsed)))))))
+
+(defun parse-timestring-into-list (timestring format)
+  "Reads TIMESTRING into its FORMAT components."
+  (loop with out = ()
+        with point = 0
+        for fragment in format
+        for (parse advance) = (match-fragment timestring fragment point)
+        do (incf point advance)
+           (typecase fragment
+               ((member :gmt-offset :gmt-offset-hhmm :gmt-offset-or-z)
+                (cond ((listp parse)
+                       (setf (getf out :offset-hour (first parse))
+                             (getf out :offset-minute (second parse))))
+                      ((string-equal parse "Z")
+                       (setf (getf out :offset-hour 0)
+                             (getf out :offset-minute 0)))))
+               (keyword
+                (setf (getf out fragment) parse))
+               ((or character string))
+               (list
+                (setf (getf out (first fragment)) parse)))
+        finally (return (list out point))))
