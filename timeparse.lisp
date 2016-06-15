@@ -56,7 +56,7 @@
                                    (+ start (length needle))))))
     (if match
         (list match (length needle))
-        (error 'match-fallthrough-error :needles needle :haystacks haystack))))
+        (error 'match-fallthrough-error :needles needle :haystack haystack))))
 
 (defun match-multiple-targets (haystack needles start)
   "See if the string immediately at point is part of a list of needles.
