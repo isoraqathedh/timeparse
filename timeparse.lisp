@@ -113,7 +113,7 @@ that also count toward the maximum."
     (string (match-entire-target haystack fragment start))
     (list (destructuring-bind (spec pad &optional (pad-char #\0)) fragment
             (declare (ignorable spec))
-            (read-number haystack pad start pad-char)))
+            (match-number haystack start :min-digit-count pad :padchar pad-char)))
     (paddable-keyword (read-number haystack 1 start))
     (keyword (case fragment
                (:long-month
@@ -137,7 +137,7 @@ that also count toward the maximum."
                   (list (first number-component)
                         (+ (second ordinal-component)
                            (second number-component)))))
-               (:hour12 (match-number start :max-digit-count 2))
+               (:hour12 (match-number haystack start :max-digit-count 2))
                ((:gmt-offset :gmt-offset-or-z :gmt-offset-hhmm)
                 (let (characters-parsed offset-hour offset-minute met-colon-p)
                   ;; Deal with Z first:
