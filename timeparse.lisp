@@ -163,7 +163,9 @@ that also count toward the maximum."
                     (setf offset-minute match)
                     (incf characters-parsed count))
                   (list (list offset-hour offset-minute met-colon-p)
-                        characters-parsed)))))))
+                        characters-parsed)))
+               ((:timezone :minimal-weekday)
+                (error "Option ~a not implemented" fragment))))))
 
 (defun parse-timestring-into-list (timestring format)
   "Reads TIMESTRING into its FORMAT components."
