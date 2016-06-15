@@ -31,19 +31,42 @@ Returns position of the needle found in NEEDLES."
                   (match-entire-target haystack needle start))
         return (list j (length needle))))
 
-(defun read-number (haystack digit-count start &optional (padchar #\0))
-  "Read a number with at least DIGIT-COUNT digits."
+(defun match-number (haystack start &key (digit-count 1 digit-count-supplied-p)
+                                         (min-digit-count 1) max-digit-count
+                                         (padchar #\0))
+  "Read a number in HAYSTACK.
+
+Start searching at START.
+The scanned number has between DIGIT-COUNT-MIN and DIGIT-COUNT-MAX digits,
+or exactly DIGIT-COUNT digits if that is supplied.
+The string can be preceded by any number of PADCHARs
+that also count toward the maximum."
   (let ((position-after-padchars
+          ;; skip past the padding characters.
           (position-if (lambda (thing) (char/= thing padchar)) haystack
-                       :start start)))
-    (multiple-value-bind (number digits-used)
-        ;; Possible problem point: can sometimes take in more than specified.
-        ;; This might be expected sometimes but not always.
-        (parse-integer haystack :start position-after-padchars
-                                :junk-allowed t)
-      (when (< (- digits-used start) digit-count)
-        (error "Not enough digits to make a ~r-digit number." digit-count))
-      (list number (- digits-used start)))))
+                       :start start
+                       :end (+ start (cond (digit-count-supplied-p digit-count)
+                                           (max-digit-count max-digit-count)
+                                           (t 0))))))
+    (if digit-count-supplied-p
+        (multiple-value-list
+         (parse-integer haystack :start position-after-padchars
+                                 :end (+ position-after-padchars digit-count)))
+        (multiple-value-bind (number digits-used)
+            (parse-integer haystack :start position-after-padchars
+                                    :end (when max-digit-count
+                                           (+ position-after-padchars
+                                              max-digit-count))
+                                    ;; We can end parsing after we hit any junk.
+                                    :junk-allowed t)
+          (format t "Got number ~d, using ~r digits~%" number digits-used)
+          (cond ((< (- digits-used position-after-padchars) min-digit-count)
+                 (error "Not enough digits to make a ~r-digit number."
+                        digit-count))
+                ((> (- digits-used position-after-padchars) max-digit-count)
+                 (error "Too many digits to make a ~r-digit number."
+                        digit-count))
+                (t (list number (- digits-used start))))))))
 
 (defun match-fragment (haystack fragment start)
   (etypecase fragment
