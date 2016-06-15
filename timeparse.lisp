@@ -7,12 +7,17 @@
     :iso-week-year :iso-week-number :iso-week-day)
   "These symbols are allowed to be in a padding list.")
 
+(defvar *maximum-year-length* 4
+  "The maximum length a year can be.
+Change this if you are dealing with years beyond 10000 CE.")
+
 (defun date-max-space (fragment)
   "Determine the maximum character width that a time unit can take up.
 Padding is not considered.
 If there is no limit, then return nil."
   (ecase fragment
-    (:year nil) (:month 2)  (:day 2) (:weekday 1)
+    (:year *maximum-year-length*)
+    (:month 2)  (:day 2) (:weekday 1)
     (:hour 2)   (:minute 2) (:second 2)
     (:msec 3)   (:usec 6)   (:nseq 9)
     (:iso-week-year nil)
@@ -125,8 +130,9 @@ that also count toward the maximum."
     (character (match-entire-target haystack (string fragment) start))
     (string (match-entire-target haystack fragment start))
     (list (destructuring-bind (spec pad &optional (pad-char #\0)) fragment
-            (declare (ignorable spec))
-            (match-number haystack start :min-digit-count pad :padchar pad-char)))
+            (match-number haystack start :min-digit-count pad
+                                         :max-digit-count (date-max-space spec)
+                                         :padchar pad-char)))
     (paddable-keyword (match-number haystack start))
     (keyword (case fragment
                (:long-month
