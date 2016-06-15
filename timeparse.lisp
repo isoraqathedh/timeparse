@@ -81,13 +81,13 @@ The string can be preceded by any number of PADCHARs
 that also count toward the maximum."
   (let ((position-after-padchars
           ;; skip past the padding characters.
-          (position-if (lambda (thing) (char/= thing padchar)) haystack
-                       :start start
-                       :end (+ start (cond (digit-count-supplied-p digit-count)
-                                           (max-digit-count max-digit-count)
-                                           (t 0))))))
-    (unless position-after-padchars
-      (error "No number found, only padchars."))
+          (or (position-if (lambda (thing) (char/= thing padchar)) haystack
+                           :start start
+                           :end (+ start
+                                   (cond (digit-count-supplied-p digit-count)
+                                         (max-digit-count max-digit-count)
+                                         (t 0))))
+              start)))
     (if digit-count-supplied-p
         (multiple-value-bind (number digits-used)
             (parse-integer haystack
@@ -101,7 +101,7 @@ that also count toward the maximum."
                                               max-digit-count))
                                     ;; We can end parsing after we hit any junk.
                                     :junk-allowed t)
-          (if (<= min-digit-count (- digits-used start) max-digit-count)
+          (if (<= min-digit-count (- digits-used start) (or max-digit-count most-positive-fixnum))
               (list number (- digits-used start))
               (error 'match-number-error :parsed-number number
                                          :min-digits min-digit-count
@@ -114,7 +114,7 @@ that also count toward the maximum."
     (list (destructuring-bind (spec pad &optional (pad-char #\0)) fragment
             (declare (ignorable spec))
             (match-number haystack start :min-digit-count pad :padchar pad-char)))
-    (paddable-keyword (read-number haystack 1 start))
+    (paddable-keyword (match-number haystack start))
     (keyword (case fragment
                (:long-month
                 (match-multiple-targets haystack +month-names+ start))
