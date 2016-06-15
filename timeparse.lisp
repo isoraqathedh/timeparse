@@ -101,7 +101,6 @@ that also count toward the maximum."
                                               max-digit-count))
                                     ;; We can end parsing after we hit any junk.
                                     :junk-allowed t)
-          (format t "Got number ~d, using ~r digits~%" number digits-used)
           (if (<= min-digit-count (- digits-used start) max-digit-count)
               (list number (- digits-used start))
               (error 'match-number-error :parsed-number number
