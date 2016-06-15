@@ -13,14 +13,50 @@
 (deftype paddable-keyword ()
   '(satisfies paddable-keywords-p))
 
+(define-condition match-failure (error) ()
+  (:documentation "Generic matching error."))
+
+(define-condition match-fallthrough-error (match-failure)
+  ((needle :initarg :needles
+           :reader needles)
+   (haystacks :initarg :haystack
+              :reader haystack))
+  (:documentation "Error raised when trying to match needle(s) but fail.")
+  (:report (lambda (condition stream)
+             (format stream "Match failed: wanted ~:[~;one of ~]~s, got ~s"
+                     (typep (needles condition) '(or list (vector string)))
+                     (needles condition)
+                     (haystacks condition)))))
+
+(define-condition match-number-error (match-failure)
+  ((min-digits :initarg :min-digits
+               :initform 0
+               :reader min-digits)
+   (max-digits :initarg :max-digits
+               :initform nil
+               :reader max-digits)
+   (parsed-number :initarg :parsed-number
+                  :reader parsed-number))
+  (:documentation
+   "Error raised when the number of digits parsed is out of bounds.")
+  (:report (lambda (condition stream)
+             (format stream
+                     "Match failed: parsed number ~a has ~a digit~:p, ~
+                      not ~a ~:[or more~;- ~:*~a~]."
+                     (parsed-number condition)
+                     (length (format nil "~a" (parsed-number condition)))
+                     (min-digits condition)
+                     (max-digits condition)))))
+
 (defun match-entire-target (haystack needle start)
   "Determine if NEEDLE is entirely in HAYSTACK at the position START."
   (let ((match (string= needle haystack
-                         :start2 start
-                         :end2 (min (length haystack)
-                                    (+ start (length needle))))))
-    (when match
-      (list match (length needle)))))
+                        :start2 start
+                        :end2 (min (length haystack)
+                                   (+ start (length needle))))))
+    (if match
+        (list match (length needle))
+        (error 'match-fallthrough-error :needles needle :haystacks haystack))))
 
 (defun match-multiple-targets (haystack needles start)
   "See if the string immediately at point is part of a list of needles.
@@ -29,7 +65,9 @@ Returns position of the needle found in NEEDLES."
         for j from 0
         when (and (not (string= needle ""))
                   (match-entire-target haystack needle start))
-        return (list j (length needle))))
+        return (list j (length needle))
+        finally (error 'match-fallthrough-error :needles needles
+                                                :haystack haystack)))
 
 (defun match-number (haystack start &key (digit-count 1 digit-count-supplied-p)
                                          (min-digit-count 1) max-digit-count
@@ -48,10 +86,14 @@ that also count toward the maximum."
                        :end (+ start (cond (digit-count-supplied-p digit-count)
                                            (max-digit-count max-digit-count)
                                            (t 0))))))
+    (unless position-after-padchars
+      (error "No number found, only padchars."))
     (if digit-count-supplied-p
-        (multiple-value-list
-         (parse-integer haystack :start position-after-padchars
-                                 :end (+ position-after-padchars digit-count)))
+        (multiple-value-bind (number digits-used)
+            (parse-integer haystack
+                           :start position-after-padchars
+                           :end (+ position-after-padchars digit-count))
+          (list number (- digits-used start)))
         (multiple-value-bind (number digits-used)
             (parse-integer haystack :start position-after-padchars
                                     :end (when max-digit-count
@@ -60,13 +102,11 @@ that also count toward the maximum."
                                     ;; We can end parsing after we hit any junk.
                                     :junk-allowed t)
           (format t "Got number ~d, using ~r digits~%" number digits-used)
-          (cond ((< (- digits-used position-after-padchars) min-digit-count)
-                 (error "Not enough digits to make a ~r-digit number."
-                        digit-count))
-                ((> (- digits-used position-after-padchars) max-digit-count)
-                 (error "Too many digits to make a ~r-digit number."
-                        digit-count))
-                (t (list number (- digits-used start))))))))
+          (if (<= min-digit-count (- digits-used start) max-digit-count)
+              (list number (- digits-used start))
+              (error 'match-number-error :parsed-number number
+                                         :min-digits min-digit-count
+                                         :max-digits max-digit-count))))))
 
 (defun match-fragment (haystack fragment start)
   (etypecase fragment
