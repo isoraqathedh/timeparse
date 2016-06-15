@@ -151,7 +151,7 @@ that also count toward the maximum."
                     (incf characters-parsed count))
                   ;; Match the colon
                   (when (handler-case (match-entire-target haystack ":"
-                                                           (+ start count))
+                                                           (+ start characters-parsed))
                           (match-fallthrough-error nil))
                     (incf characters-parsed)
                     (setf met-colon-p t))
