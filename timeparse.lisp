@@ -64,7 +64,8 @@ Returns position of the needle found in NEEDLES."
   (loop for needle across needles
         for j from 0
         when (and (not (string= needle ""))
-                  (match-entire-target haystack needle start))
+                  (handler-case (match-entire-target haystack needle start)
+                    (match-fallthrough-error nil)))
         return (list j (length needle))
         finally (error 'match-fallthrough-error :needles needles
                                                 :haystack haystack)))
