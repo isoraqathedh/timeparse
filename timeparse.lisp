@@ -185,14 +185,21 @@ that also count toward the maximum."
                ((:timezone :minimal-weekday)
                 (error "Option ~a not implemented" fragment))))))
 
-(defun parse-timestring-into-list (timestring format)
+(defun parse-timestring-into-list (timestring format &key timezone)
   "Reads TIMESTRING into its FORMAT components."
-  (loop with out = ()
-        with point = 0
-        for fragment in format
-        for (parse advance) = (match-fragment timestring fragment point)
-        do (incf point advance)
-           (typecase fragment
+  (let ((point 0)
+        (out ()))
+    (loop initally (if timezone
+                       (setf (getf out :timezone
+                                   (etypecase timezone
+                                     (local-time::timezone timezone)
+                                     (string (find-timezone-by-location-name
+                                              timezone))))))
+          with point = 0
+          for fragment in format
+          for (parse advance) = (match-fragment timestring fragment point)
+          do (incf point advance)
+             (typecase fragment
                ((member :gmt-offset :gmt-offset-hhmm :gmt-offset-or-z)
                 (cond ((listp parse)
                        (setf (getf out :offset-hour (first parse))
@@ -205,4 +212,16 @@ that also count toward the maximum."
                ((or character string))
                (list
                 (setf (getf out (first fragment)) parse)))
-        finally (return (list out point))))
+          finally (return (list out point)))))
+
+(defun make-timestamp-from-list (plist)
+  "Takes PLIST and attempts to form a timestamp from it.
+
+Order of preferences apply:
+
+1. Year-month-day first, defaulting to (current year)-01-01.
+2. ISO year ISO week ISO weekday first, defaulting to (current year)-01-0.
+
+Hours, minutes, seconds and subseconds are dealt with separately.
+They all default to 0."
+  )
