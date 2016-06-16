@@ -195,7 +195,6 @@ that also count toward the maximum."
                                      (local-time::timezone timezone)
                                      (string (find-timezone-by-location-name
                                               timezone))))))
-          with point = 0
           for fragment in format
           for (parse advance) = (match-fragment timestring fragment point)
           do (incf point advance)
